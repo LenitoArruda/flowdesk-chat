@@ -1,0 +1,14 @@
+{
+  "name": "coders-university-pos-ia-m3",
+  "version": "1.0.0",
+  "scripts": {
+    "env:setup": "cp .env.example .env.local"
+  },
+  "type": "module",
+  "dependencies": {
+    "openai": "^7.28.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4"
+  }
+}
