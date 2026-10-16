@@ -1,16 +1,18 @@
 import { openai } from "../clients/openai.ts";
+import { ContextWindow } from "./contextWindows.ts";
 import { withRetry } from "./withRetry.ts";
 
 export async function generateWithCritique<T>(
     system: string,
-    prompt: string,
+    contextWindow: ContextWindow,
 ): Promise<string> {
+    console.log("Generating draft with context window:", JSON.stringify(contextWindow.getMessages(), null, 2));
     const draft = await withRetry(async () => {
         const response = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
                 { role: "system", content: system },
-                { role: "user", content: prompt }
+                ...contextWindow.getMessages()
             ]
         });
         return response.choices[0].message.content ?? "";
