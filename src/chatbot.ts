@@ -5,6 +5,8 @@ import * as crypto from "node:crypto";
 import { ContextWindow } from "./utils/contextWindows.ts";
 import { maybeCompress } from "./utils/maybeCompress.ts";
 import { stitchContext } from "./utils/stitchContext.ts";
+import { validateInput } from "./utils/validateInput.ts";
+import { validateOutput } from "./utils/validateOutput.ts";
 
 const systemPrompt = process.argv[2];
 const windowId = process.argv[3] || crypto.randomUUID();
@@ -28,6 +30,13 @@ while (true) {
         break;
     };
 
+    const inputValidationResult = validateInput(usePrompt, ["senha", "pix", "futebol"]);
+
+    if (!inputValidationResult.isValid) {
+        console.log("Entrada inválida:", inputValidationResult.errors.join(", "));
+        continue;
+    };
+
     messageRepository.save(windowId, contextWindow.addUserMessage(usePrompt));
 
     const compressedMessages = await maybeCompress(contextWindow);
@@ -38,6 +47,13 @@ while (true) {
     process.stdout.write("Assistente: Estou gerando a resposta...\n\n");
 
     const fullResponse = await streamResponse(stitched, systemPrompt);
+
+    const outputValidationResult = validateOutput(fullResponse, ["eu acho que você deveria fazer", "você deve fazer", "o meu conselho para você é"]);
+
+    if (!outputValidationResult.isValid) {
+        console.log("Saída inválida:", outputValidationResult.errors.join(", "));
+        continue;
+    };
 
     messageRepository.save(windowId, contextWindow.addAssistantMessage(fullResponse));
 }
