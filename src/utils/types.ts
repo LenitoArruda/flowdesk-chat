@@ -4,12 +4,13 @@ export type Message = {
     content: string;
 };
 
-export interface IRepository<T> {
-    save(session: string, data: T): void;
-    load(session: string): T[];
-};
 
 export type ValidationResult = {
     isValid: boolean;
     errors: string[];
+};
+
+export type RagExample = {
+    q: string;
+    a: string;
 };
