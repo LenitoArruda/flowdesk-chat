@@ -11,7 +11,7 @@ export async function ragAnswer(
     const questionEmbedding = await embed(question);
 
     // 2. busca os chunks relevantes no repositório
-    const results = repo.search(questionEmbedding);
+    const results = repo.search(question, questionEmbedding);
     const chunks = results.map(r => r.chunk);
 
     // 3. monta o prompt e chama o modelo
