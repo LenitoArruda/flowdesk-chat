@@ -6,6 +6,7 @@
   },
   "type": "module",
   "dependencies": {
+    "duckdb": "^1.4.4",
     "openai": "^7.28.0"
   },
   "devDependencies": {
