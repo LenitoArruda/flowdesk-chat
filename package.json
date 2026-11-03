@@ -4,8 +4,10 @@
   "scripts": {
     "env:setup": "cp .env.example .env.local",
     "chat": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/chat.ts",
+    "demo": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/demo.ts",
     "ingest": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/ingest.ts",
     "test": "node --experimental-strip-types --no-warnings --test \"tests/**/*.test.ts\"",
+    "eval": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/eval.ts",
     "typecheck": "tsc --noEmit",
     "fine-tuning:dataset": "node --experimental-strip-types examples/build-finetuning-dataset.ts"
   },
