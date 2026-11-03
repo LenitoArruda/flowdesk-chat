@@ -1,7 +1,7 @@
-import { VectorRepository } from "./vectorRepository.ts";
-import { ragAnswer } from "./utils/ragAnswer.ts";
-import { ragDebug } from "./utils/ragDebug.ts";
-import { safeRagAnswer } from "./utils/safeRagAnswer.ts";
+import { VectorRepository } from "../repositories/vectorRepository.ts";
+import { ragAnswer } from "../rag/ragAnswer.ts";
+import { ragDebug } from "../rag/ragDebug.ts";
+import { safeRagAnswer } from "../rag/safeRagAnswer.ts";
 
 const vectorRepository = new VectorRepository();
 

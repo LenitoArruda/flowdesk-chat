@@ -1,4 +1,4 @@
-import type { ValidationResult } from "./types.ts";
+import type { ValidationResult } from "../shared/types.ts";
 
 export function validateOutput(response: string, hallucinationSignals: string[]): ValidationResult {
 

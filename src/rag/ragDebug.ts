@@ -1,4 +1,4 @@
-import { VectorRepository } from "../vectorRepository.ts";
+import { VectorRepository } from "../repositories/vectorRepository.ts";
 import { embed } from "./embed.ts";
 
 const MAX_CHUNKS = 150;

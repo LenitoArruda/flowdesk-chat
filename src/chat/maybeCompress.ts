@@ -1,7 +1,7 @@
 import type { ContextWindow } from "./contextWindows.ts";
 import { estimateTokens } from "./estimateTokens.ts";
-import { summarizeHistory } from "./sumamarizeHistory.ts";
-import type { Message } from "./types.ts";
+import { summarizeHistory } from "./summarizeHistory.ts";
+import type { Message } from "../shared/types.ts";
 
 const MAX_TOKENS = 4096;
 
