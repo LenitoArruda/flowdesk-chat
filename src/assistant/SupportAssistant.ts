@@ -11,7 +11,7 @@ import type { MemoryRepository } from "../repositories/memoryRepository.ts";
 import type { MessageRepository } from "../repositories/messageRepository.ts";
 import { checkInput } from "../rules/inputRules.ts";
 import { checkOutput } from "../rules/outputGuard.ts";
-import { REFUSALS, SMALLTALK_REPLY } from "../rules/refusals.ts";
+import { ACKNOWLEDGE_REPLY, CLARIFY_REPLY, REFUSALS, SMALLTALK_REPLY } from "../rules/refusals.ts";
 import { ScopeGuard } from "../rules/ScopeGuard.ts";
 import type { RefusalReason, TraceEntry } from "../rules/types.ts";
 import type { Message } from "../shared/types.ts";
@@ -33,10 +33,12 @@ export type Source = {
 
 export type TurnResult = {
     answer: string;
-    outcome: "answered" | "refused" | "smalltalk";
+    outcome: "answered" | "refused" | "smalltalk" | "clarification" | "acknowledged";
     refusalReason?: RefusalReason;
     /** Sources the answer actually cites. */
     sources: Source[];
+    /** Everything the retriever returned for this turn, cited or not (used by the evaluation report). */
+    retrieved: Omit<Source, "index">[];
     /** Audit trail of every stage and rule that decided this turn. */
     trace: TraceEntry[];
     context?: ContextReport;
@@ -82,10 +84,11 @@ export class SupportAssistant {
 
     async handleTurn({ userId, sessionId, text }: TurnInput): Promise<TurnResult> {
         const trace: TraceEntry[] = [];
+        let retrieved: TurnResult["retrieved"] = [];
         const refuse = (reason: RefusalReason, entry: Omit<TraceEntry, "outcome">, persist: boolean): TurnResult => {
             trace.push({ ...entry, outcome: "block" });
             if (persist) this.persist(sessionId, text, REFUSALS[reason]);
-            return { answer: REFUSALS[reason], outcome: "refused", refusalReason: reason, sources: [], trace };
+            return { answer: REFUSALS[reason], outcome: "refused", refusalReason: reason, sources: [], retrieved, trace };
         };
 
         // 1. Deterministic input rules, before spending any model call.
@@ -111,7 +114,17 @@ export class SupportAssistant {
         const scope = await this.scopeGuard.classify(text, shortTerm.getMessages());
         if (scope.label === "smalltalk") {
             trace.push({ stage: "scope", rule: "scope.smalltalk", outcome: "pass", detail: scope.source });
-            return { answer: SMALLTALK_REPLY, outcome: "smalltalk", sources: [], trace };
+            return { answer: SMALLTALK_REPLY, outcome: "smalltalk", sources: [], retrieved, trace };
+        }
+        if (scope.label === "ambiguous") {
+            trace.push({ stage: "scope", rule: "scope.ambiguous", outcome: "pass", detail: scope.reason });
+            return { answer: CLARIFY_REPLY, outcome: "clarification", sources: [], retrieved, trace };
+        }
+        if (scope.label === "statement") {
+            const learned = await this.longTermMemory.learn(userId, text);
+            trace.push({ stage: "scope", rule: "scope.statement", outcome: "pass", detail: `${learned.length} fato(s) aprendido(s)` });
+            this.persist(sessionId, text, ACKNOWLEDGE_REPLY);
+            return { answer: ACKNOWLEDGE_REPLY, outcome: "acknowledged", sources: [], retrieved, trace };
         }
         if (scope.label === "injection") {
             return refuse("prompt_injection", { stage: "scope", rule: "scope.injection", detail: scope.reason }, false);
@@ -133,6 +146,7 @@ export class SupportAssistant {
 
         // 5. Knowledge: no relevant documentation means no model call at all.
         const chunks = await this.retriever.retrieve(buildRetrievalQuery(text, shortTerm.getMessages()));
+        retrieved = chunks.map(chunk => ({ source: chunk.source, title: chunk.title, section: chunk.section, score: chunk.score }));
         if (chunks.length === 0) {
             return refuse("no_knowledge", { stage: "retrieval", rule: "retrieval.min_score", detail: "nenhum trecho relevante" }, true);
         }
@@ -182,6 +196,7 @@ export class SupportAssistant {
             answer,
             outcome: "answered",
             sources: citedSources(answer, context.knowledge),
+            retrieved,
             trace,
             context: context.report,
         };

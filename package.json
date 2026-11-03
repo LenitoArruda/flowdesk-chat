@@ -9,7 +9,8 @@
     "test": "node --experimental-strip-types --no-warnings --test \"tests/**/*.test.ts\"",
     "eval": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/eval.ts",
     "typecheck": "tsc --noEmit",
-    "fine-tuning:dataset": "node --experimental-strip-types examples/build-finetuning-dataset.ts"
+    "fine-tuning:dataset": "node --experimental-strip-types examples/build-finetuning-dataset.ts",
+    "eval:report": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/evalReport.ts"
   },
   "type": "module",
   "dependencies": {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { REFUSALS, SMALLTALK_REPLY } from "../../src/rules/refusals.ts";
+import { ACKNOWLEDGE_REPLY, CLARIFY_REPLY, REFUSALS, SMALLTALK_REPLY } from "../../src/rules/refusals.ts";
 import { createTestAssistant, turn } from "../helpers/setup.ts";
 
 /**
@@ -110,6 +110,30 @@ describe("rules: the assistant only talks about the platform", () => {
         assert.equal(result.outcome, "smalltalk");
         assert.equal(result.answer, SMALLTALK_REPLY);
         assert.equal(llm.calls.length, 0);
+    });
+
+    it("asks for clarification on vague messages instead of refusing or guessing", async () => {
+        const { assistant, llm, messageRepository } = await createTestAssistant();
+
+        const result = await assistant.handleTurn(turn("Como eu configuro isso?"));
+
+        assert.equal(result.outcome, "clarification");
+        assert.equal(result.answer, CLARIFY_REPLY);
+        assert.equal(llm.callsFor("answer").length, 0);
+        assert.equal(messageRepository.load("s1").length, 0);
+    });
+
+    it("acknowledges a statement about the user, learns from it and does not search or generate", async () => {
+        const { assistant, llm, memoryRepository } = await createTestAssistant({
+            facts: () => JSON.stringify({ facts: [{ key: "plano", value: "Standard" }] }),
+        });
+
+        const result = await assistant.handleTurn(turn("Somos uma equipe de 8 pessoas no plano Standard."));
+
+        assert.equal(result.outcome, "acknowledged");
+        assert.equal(result.answer, ACKNOWLEDGE_REPLY);
+        assert.equal(llm.callsFor("answer").length, 0);
+        assert.deepEqual(memoryRepository.getFacts("ana"), [{ key: "plano", value: "Standard" }]);
     });
 
     it("is consistent: the same off-topic question gets the same refusal every time", async () => {

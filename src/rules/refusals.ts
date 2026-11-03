@@ -18,3 +18,8 @@ export const REFUSALS: Record<RefusalReason, string> = {
 
 export const SMALLTALK_REPLY =
     "Olá! Sou o assistente de suporte da FlowDesk. Se tiver alguma dúvida sobre a plataforma, é só perguntar.";
+
+export const CLARIFY_REPLY =
+    "Não entendi bem a que você se refere. Pode dar mais detalhes sobre o que deseja fazer na FlowDesk (por exemplo: projeto, issue, board, sprint, plano ou integração)?";
+
+export const ACKNOWLEDGE_REPLY = "Obrigado, anotei essas informações. Em que posso ajudar na FlowDesk?";

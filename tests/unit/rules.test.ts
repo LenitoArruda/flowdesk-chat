@@ -74,7 +74,7 @@ describe("ScopeGuard", () => {
     });
 
     it("returns the classifier's label", async () => {
-        for (const label of ["in_scope", "out_of_scope", "injection"]) {
+        for (const label of ["in_scope", "out_of_scope", "injection", "ambiguous", "statement"]) {
             const { result } = decide(JSON.stringify({ label, reason: "x" }));
             assert.equal((await result).label, label);
         }

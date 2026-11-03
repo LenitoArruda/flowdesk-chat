@@ -18,7 +18,11 @@ export const keywordScopeClassifier: NonNullable<Handlers>["scope"] = messages =
         ? "out_of_scope"
         : /esquecer quem você é|outro assistente/.test(text)
           ? "injection"
-          : "in_scope";
+          : /como (eu )?configuro isso/.test(text)
+            ? "ambiguous"
+            : /^somos [^?]*$/.test(text.split("\n").at(-1) ?? "")
+              ? "statement"
+              : "in_scope";
 
     return JSON.stringify({ label, reason: "fake" });
 };
