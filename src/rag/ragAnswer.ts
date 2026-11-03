@@ -1,5 +1,5 @@
 import { openai } from "../clients/openai.ts";
-import { VectorRepository } from "../vectorRepository.ts";
+import { VectorRepository } from "../repositories/vectorRepository.ts";
 import { buildRagPrompt } from "./buildRagPrompt.ts";
 import { embed } from "./embed.ts";
 

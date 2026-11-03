@@ -1,4 +1,4 @@
-import type { Message } from "./types.ts";
+import type { Message } from "../shared/types.ts";
 import { openai } from "../clients/openai.ts";
 
 export async function streamResponse(history: Message[], system: string = "Você é um assistente útil e prestativo.") {

@@ -1,11 +1,14 @@
 import { DatabaseSync } from "node:sqlite"
-import type { Message } from "./types";
+import { mkdirSync } from "node:fs";
+import { DB_DIR, MESSAGES_DB_PATH } from "../config/paths.ts";
+import type { Message } from "../shared/types.ts";
 
 export class MessageRepository {
     private db: DatabaseSync;
 
     constructor() {
-        this.db = new DatabaseSync("pos_ia-m3.db");
+        mkdirSync(DB_DIR, { recursive: true });
+        this.db = new DatabaseSync(MESSAGES_DB_PATH);
         this.db.exec(`
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

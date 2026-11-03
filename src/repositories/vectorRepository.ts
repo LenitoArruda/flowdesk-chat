@@ -1,7 +1,9 @@
 import { DatabaseSync } from "node:sqlite"
-import { cosineSimilarity } from "./utils/cosineSimilarity.ts";
-import { hybridScore } from "./utils/hybridScore.ts";
-import { keywordScore } from "./utils/keywordScore.ts";
+import { mkdirSync } from "node:fs";
+import { DB_DIR, VECTORS_DB_PATH } from "../config/paths.ts";
+import { cosineSimilarity } from "../rag/cosineSimilarity.ts";
+import { hybridScore } from "../rag/hybridScore.ts";
+import { keywordScore } from "../rag/keywordScore.ts";
 
 export class VectorRepository {
     embed(question: string) {
@@ -9,7 +11,8 @@ export class VectorRepository {
     }
     private db: DatabaseSync;
 
-    constructor(db = "vector_db.db") {
+    constructor(db = VECTORS_DB_PATH) {
+        mkdirSync(DB_DIR, { recursive: true });
         this.db = new DatabaseSync(db);
         this.db.exec(`
             CREATE TABLE IF NOT EXISTS documents (

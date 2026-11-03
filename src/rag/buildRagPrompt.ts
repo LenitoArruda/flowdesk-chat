@@ -1,4 +1,4 @@
-import type { RagExample } from "./types.ts";
+import type { RagExample } from "../shared/types.ts";
 
 export function buildRagPrompt(
     question: string,

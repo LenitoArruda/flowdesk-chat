@@ -1,4 +1,7 @@
 import duckdb from "duckdb";
+import { mkdirSync } from "node:fs";
+import { resolve } from "node:path";
+import { FINE_TUNING_DIR } from "../config/paths.ts";
 
 type Sentiment = "positivo" | "negativo" | "neutro";
 
@@ -134,6 +137,9 @@ const values = reviews.map(
 
 console.log("Values:", values);
 
+mkdirSync(FINE_TUNING_DIR, { recursive: true });
+const outputPath = resolve(FINE_TUNING_DIR, "reviews.parquet").replace(/\\/g, "/");
+
 con.run(`
-    COPY (SELECT * FROM (VALUES ${values}) AS t(review, sentiment)) TO 'reviews.parquet' (FORMAT PARQUET)
+    COPY (SELECT * FROM (VALUES ${values}) AS t(review, sentiment)) TO '${outputPath}' (FORMAT PARQUET)
     `)
