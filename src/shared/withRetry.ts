@@ -1,26 +1,35 @@
-import { OpenAI } from "openai";
+export type RetryOptions = {
+    retries?: number;
+    baseDelayMs?: number;
+    isRetryable?: (error: unknown) => boolean;
+};
 
-export async function withRetry<T>(fn: () => Promise<T>, retries: number = 3, delayInSeconds: number = 1000): Promise<T> {
-    for (let attempt = 1; attempt <= retries; attempt++) {
+/** Retries on rate limits, 5xx responses and connection failures (OpenAI SDK error shapes). */
+export function isTransientError(error: unknown): boolean {
+    if (typeof error !== "object" || error === null) return false;
+
+    const { status, name } = error as { status?: unknown; name?: unknown };
+
+    if (typeof status === "number") return status === 429 || status >= 500;
+
+    return name === "APIConnectionError" || name === "APIConnectionTimeoutError";
+}
+
+export async function withRetry<T>(
+    fn: () => Promise<T>,
+    { retries = 3, baseDelayMs = 500, isRetryable = isTransientError }: RetryOptions = {}
+): Promise<T> {
+    for (let attempt = 1; ; attempt++) {
         try {
             return await fn();
         } catch (error) {
-            const isRetryable =
-                error instanceof OpenAI.RateLimitError ||
-                error instanceof OpenAI.APIConnectionError ||
-                error instanceof OpenAI.APIConnectionTimeoutError ||
-                error instanceof OpenAI.APIError &&
-                (error.status === 429 || error.status >= 500);
-
-            if (attempt === retries && !isRetryable) {
+            if (attempt >= retries || !isRetryable(error)) {
                 throw error;
             }
 
-            const exponentialDelay = Math.pow(2, attempt) * (delayInSeconds * 1000);
-            console.warn(`Attempt ${attempt} failed. Retrying in ${exponentialDelay}ms...`, error);
-
-            await new Promise(resolve => setTimeout(resolve, exponentialDelay));
+            const delay = baseDelayMs * 2 ** (attempt - 1);
+            console.warn(`Attempt ${attempt} failed. Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
-    throw new Error(`Unreachable code: This should never be reached because all retry attempts have been exhausted.`);
 }

@@ -1,104 +1,119 @@
-# FlowDesk Chat
+# FlowDesk Support Assistant
 
-A TypeScript project that explores AI-powered features for FlowDesk, a fictional customer and lead management platform. It covers conversational assistants, retrieval-augmented generation (RAG) over company policy documents, and the first steps of a sentiment-classification fine-tuning dataset, all powered by the OpenAI API.
+Plataforma de contexto *AI-first* para o suporte da **FlowDesk**, um SaaS de gerenciamento de tarefas e projetos no estilo do Jira. Usuários tiram dúvidas sobre a plataforma em um chat; o assistente responde **apenas com base na documentação oficial**, **apenas sobre a FlowDesk**, lembra do que importa e mostra de onde veio cada resposta.
 
-## Features
+Projeto prático do Módulo 3 da pós-graduação: contexto estruturado, memória, regras e conhecimento.
 
-- **Conversational assistants**
-  - Three personas: customer support, business analyst, and product manager.
-  - An interactive command-line chatbot with streamed responses.
-  - Input and output validation (guardrails).
-  - Context-window management with automatic history compression and summarization.
-  - Draft generation, critique, and revision in the scripted persona demo.
-  - Retry logic for OpenAI calls.
-- **RAG over documents**
-  - Document chunking with overlap and embeddings (`text-embedding-3-small`) stored in SQLite.
-  - Hybrid retrieval that combines cosine similarity with keyword scoring.
-  - Grounded answers (`gpt-4o-mini`) with a debug view of the retrieved chunks.
-  - A safe answer flow that blocks out-of-scope questions and skips the model when nothing relevant is found.
-- **Fine-tuning dataset**
-  - A labelled set of customer reviews (positive, negative, neutral) exported to Parquet with DuckDB.
-- **Persistence**
-  - Chat messages are stored in SQLite, grouped by a session identifier.
+## O que ele faz
 
-## Requirements
+- **Controla o comportamento:** recusa qualquer assunto que não seja a FlowDesk, bloqueia prompt injection e dados sensíveis, pede detalhes quando a mensagem é vaga, apenas registra mensagens que só informam dados do usuário e responde sempre da mesma forma a casos iguais.
+- **Usa conhecimento real:** RAG sobre 12 artigos de suporte; cada resposta cita as fontes `[n]`. Sem documentação relevante, o modelo nem é chamado.
+- **Reduz alucinação:** a resposta só é entregue se citar fontes existentes e se todo número (preço, limite, prazo) estiver na documentação; senão vira um fallback seguro.
+- **Mantém memória:** conversa (curta), resumo automático de conversas longas e fatos duráveis do usuário entre sessões (plano, papel, ferramentas), isolados por usuário.
+- **É auditável:** cada turno devolve um `trace` com a regra que decidiu cada etapa.
 
-- Node.js 22.13 or newer.
-- An OpenAI API key.
+```text
+Você: Quem vai ganhar o campeonato de futebol este ano?
+Assistente: Só consigo ajudar com dúvidas sobre a FlowDesk (projetos, issues, boards, ...)
 
-The project uses Node.js's built-in TypeScript type stripping and SQLite support; no separate TypeScript build step or database server is required.
+Você: Posso criar workflows personalizados no plano Standard?
+Assistente: No plano Standard, você não pode ter workflows personalizados. [...]
+            Workflows personalizados estão disponíveis apenas nos planos Business e Enterprise [1].
+Fontes:     [1] Workflows e status › Workflows personalizados (workflows-e-status.md)
+```
 
-## Setup
+## Arquitetura em uma olhada
 
-Install dependencies:
+```text
+mensagem → regras de entrada → escopo → memória → recuperação → contexto → modelo → validação de saída → resposta
+              (sem modelo)     (modelo)  (3 níveis)  (sem docs = sem geração)  (blocos + orçamento)       (citações, números)
+```
+
+| Pasta | Responsabilidade |
+|-------|------------------|
+| `src/rules` | regras de entrada, `ScopeGuard`, `outputGuard`, textos de recusa |
+| `src/context` | prompts e `ContextBuilder` (blocos tipados, ordem fixa, orçamento de tokens) |
+| `src/memory` | memória curta, resumo e longa |
+| `src/knowledge` | carga de `.md`, divisão por seção, ingestão idempotente, busca híbrida |
+| `src/assistant` | `SupportAssistant` (orquestra um turno) e `createAssistant` (composição) |
+| `src/llm` | interface `LlmClient` e adaptador OpenAI |
+| `src/repositories` | SQLite: mensagens, vetores, resumos e fatos |
+| `src/cli` | `chat`, `demo`, `eval`, `ingest` |
+| `tests/`, `evals/` | testes de comportamento e avaliação com a API real |
+| `data/documents` | base de conhecimento (Markdown) |
+
+Detalhes e diagrama em [docs/architecture.md](docs/architecture.md).
+
+## Como executar
+
+Requisitos: Node.js 22.13 ou superior e uma chave da OpenAI. Não há etapa de build nem servidor de banco: o projeto usa o type stripping e o SQLite nativos do Node.
 
 ```bash
 npm install
+npm run env:setup        # copia .env.example para .env.local
 ```
 
-Create a local environment file and add your API key:
+No Windows PowerShell, use `Copy-Item .env.example .env.local`. Edite `.env.local` e informe `OPENAI_API_KEY`.
+
+| Comando | O que faz |
+|---------|-----------|
+| `npm run chat` | chat interativo (`--user <id>`, `--session <id>` para retomar, `--debug` para ver o trace) |
+| `npm run demo` | roteiro automático: dúvida real, fora de escopo, injection, sem resposta e memória entre sessões |
+| `npm run ingest` | indexa `data/documents/*.md` (idempotente; o chat também faz isso ao iniciar) |
+| `npm test` | testes unitários e de comportamento, offline, sem chave |
+| `npm run eval` | 26 perguntas de referência contra o modelo real, com metas por categoria |
+| `npm run eval:report` | 24 perguntas (28 turnos: base, fora da base, ambíguas, follow-ups, inesperadas) e grava as evidências em `evals/results/` |
+| `npm run typecheck` | checagem de tipos |
+
+Exemplo:
 
 ```bash
-npm run env:setup
+npm run chat -- --user ana --debug
 ```
 
-On Windows PowerShell, use `Copy-Item .env.example .env.local` instead.
+## Estrutura de contexto
 
-Edit `.env.local` so it contains:
+O prompt é montado por blocos, sempre na mesma ordem, dentro de um orçamento de tokens:
 
-```dotenv
-OPENAI_API_KEY=your_api_key_here
-```
+`system` → `regras` → `perfil do usuário` → `resumo` → `documentação` → `mensagens recentes` → `pergunta`
 
-Keep your API key private. `.env.local` is excluded from Git.
+Quando excede o orçamento, descarta primeiro as mensagens antigas e os trechos de menor score; `system`, `regras` e `pergunta` nunca saem. Ver [docs/context-structure.md](docs/context-structure.md).
 
-## Usage
+## Resultados da avaliação
 
-Each entry point has an npm script, and the ones that call OpenAI load `.env.local` automatically.
+Com a API real, em 24 perguntas e duas rodadas (`npm run eval:report`; dados em `evals/results/`): **16 corretas na rodada 1 e 20 na rodada 2**, após três correções (glossário no classificador, rótulos `ambiguous` e `statement`). Nenhuma resposta inventou fatos; as falhas restantes são recusas indevidas (pergunta em inglês e com erros de digitação). A suíte `npm run eval` passa 26 de 26 e `npm test`, 57 de 57. As notas de fidelidade foram atribuídas por um único avaliador.
 
-| Script | What it does |
-| --- | --- |
-| `npm run chatbot -- "<system prompt>" [session-id]` | Interactive streaming chatbot. Type `sair` to end the session. |
-| `npm run demo:personas -- [session-id]` | Scripted persona conversation with critique and summarization. |
-| `npm run rag:ingest` | Chunks, embeds, and stores the documents from `data/documents/`. |
-| `npm run rag:query` | Retrieves the most relevant chunks and answers a question. |
-| `npm run fine-tuning:dataset` | Builds `data/fine-tuning/reviews.parquet` from the labelled reviews. |
+## Documentação
 
-Example:
+| Documento | Conteúdo |
+|-----------|----------|
+| [docs/architecture.md](docs/architecture.md) | arquitetura, fluxo de um turno, camadas, decisões |
+| [docs/context-structure.md](docs/context-structure.md) | blocos de contexto, orçamento, exemplo real |
+| [docs/rules.md](docs/rules.md) | camadas de regras e como adicionar uma |
+| [docs/use-cases.md](docs/use-cases.md) | seis casos de uso reais com a cobertura de cada um |
+| [docs/testing.md](docs/testing.md) | estratégia de testes, critérios de aceite, eval e rodadas de avaliação |
 
-```bash
-npm run chatbot -- "You are a helpful assistant." my-session
-```
+## Critérios de aceitação
 
-### RAG workflow
+| Critério | Como é atendido | Verificação |
+|----------|-----------------|-------------|
+| Arquitetura clara e modular | camadas com responsabilidade única, dependências injetadas | [architecture.md](docs/architecture.md) |
+| Comportamento consistente e controlado | regras determinísticas + classificador com falha fechada + validação de saída | `tests/behavior`, eval `out_of_scope` e `injection` |
+| Memória funcional e relevante | curta, resumo e longa; fatos filtrados por relevância e isolados por usuário | `tests/unit/memory.test.ts`, demo passos 5–6 |
+| Conhecimento correto, menos alucinação | RAG com citações; sem documentação não há geração; números verificados | eval `in_scope` e `no_answer` |
+| Engenharia reutilizável e documentada | `LlmClient` abstrato, fakes de teste, TypeScript estrito, docs | `npm test`, `npm run typecheck` |
 
-1. Add `.txt` documents to `data/documents/`.
-2. Register them in `src/cli/ingest-documents.ts` and run `npm run rag:ingest`.
-3. Change the `question` in `src/cli/rag-query.ts` and run `npm run rag:query`. It prints the retrieved chunks with their scores, then the answer.
+## Adaptar para outro produto
 
-## Project structure
+Troque os artigos em `data/documents/`, o `SYSTEM_PROMPT` e as `RULES` em `src/context/prompts.ts` e os textos de `src/rules/refusals.ts`. A mecânica de regras, memória, contexto e recuperação permanece.
 
-```text
-data/
-  db/                  SQLite databases (messages.db, vectors.db)
-  documents/           Source documents for RAG ingestion
-  fine-tuning/         Generated fine-tuning datasets
-src/
-  cli/                 Entry points (chatbot, persona demo, RAG ingest/query, dataset builder)
-  chat/                Context window, compression, streaming, summarization, personas, critique
-  rag/                 Chunking, embeddings, scoring, prompt building, and answer generation
-  guardrails/          Input and output validation
-  repositories/        SQLite persistence (messages and vectors)
-  clients/             External API clients (OpenAI)
-  config/              Shared configuration (file paths)
-  shared/              Shared types and helpers (retry)
-```
+## Limitações
 
-## Data and current limitations
+- A busca compara a pergunta com todos os vetores; para milhares de chunks, troque por um índice vetorial mantendo a interface de `VectorRepository`.
+- A verificação de números é conservadora e pode bloquear um valor calculado pelo modelo.
+- A extração de fatos do usuário depende do modelo e só roda quando a mensagem fala do próprio usuário ou da equipe.
+- O contato do suporte humano (`suporte@flowdesk.example`) e a base de conhecimento são fictícios.
 
-Messages are stored in `data/db/messages.db`, grouped by the session identifier, and document embeddings in `data/db/vectors.db`. Paths are resolved from the project root, so scripts work from any working directory. The databases are created automatically.
+## Exercícios anteriores
 
-- Although the entry points load saved messages on startup, restoring them into the active context is not currently implemented. Reusing a session identifier groups new messages under the same identifier but does not restore prior conversation context.
-- The RAG question and the list of ingested documents are set in the source files rather than passed as arguments.
-- The fine-tuning step currently only prepares the dataset; it does not start a fine-tuning job.
-- The personas and several prompts and terminal messages are written in Portuguese.
+`examples/build-finetuning-dataset.ts` (`npm run fine-tuning:dataset`) gera um dataset de avaliações classificadas por sentimento em Parquet. É material do módulo anterior e não faz parte do assistente.

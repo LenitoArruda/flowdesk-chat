@@ -1,4 +1,4 @@
-import { DatabaseSync } from "node:sqlite"
+import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { DB_DIR, MESSAGES_DB_PATH } from "../config/paths.ts";
 import type { Message } from "../shared/types.ts";
@@ -6,9 +6,11 @@ import type { Message } from "../shared/types.ts";
 export class MessageRepository {
     private db: DatabaseSync;
 
-    constructor() {
-        mkdirSync(DB_DIR, { recursive: true });
-        this.db = new DatabaseSync(MESSAGES_DB_PATH);
+    /** Pass ":memory:" for an isolated, throwaway database (used by tests). */
+    constructor(path: string = MESSAGES_DB_PATH) {
+        if (path !== ":memory:") mkdirSync(DB_DIR, { recursive: true });
+
+        this.db = new DatabaseSync(path);
         this.db.exec(`
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,28 +20,24 @@ export class MessageRepository {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
-    };
+    }
 
-    save(windowId: string, data: Message): void {
+    save(sessionId: string, message: Message): void {
         this.db.prepare(`
             INSERT INTO messages (context_window, role, content)
             VALUES (?, ?, ?)
-        `).run(windowId, data.role, data.content);
-    };
+        `).run(sessionId, message.role, message.content);
+    }
 
-    load(session: string): Message[] {
-        const messages: Message[] = [];
-
+    /** Full history of a session in insertion order. */
+    load(sessionId: string): Message[] {
         const rows = this.db.prepare(`
             SELECT role, content
             FROM messages
             WHERE context_window = ?
-            ORDER BY created_at ASC
-        `).all(session);
+            ORDER BY id ASC
+        `).all(sessionId) as Message[];
 
-        return rows.map(row => ({
-            role: row.role,
-            content: row.content
-        }) as Message);
+        return rows.map(row => ({ role: row.role, content: row.content }));
     }
 }

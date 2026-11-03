@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "scripts": {
     "env:setup": "cp .env.example .env.local",
-    "chatbot": "node --experimental-strip-types --env-file=.env.local src/cli/chatbot.ts",
-    "demo:personas": "node --experimental-strip-types --env-file=.env.local src/cli/persona-demo.ts",
-    "rag:ingest": "node --experimental-strip-types --env-file=.env.local src/cli/ingest-documents.ts",
-    "rag:query": "node --experimental-strip-types --env-file=.env.local src/cli/rag-query.ts",
-    "fine-tuning:dataset": "node --experimental-strip-types src/cli/build-finetuning-dataset.ts"
+    "chat": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/chat.ts",
+    "demo": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/demo.ts",
+    "ingest": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/ingest.ts",
+    "test": "node --experimental-strip-types --no-warnings --test \"tests/**/*.test.ts\"",
+    "eval": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/eval.ts",
+    "typecheck": "tsc --noEmit",
+    "fine-tuning:dataset": "node --experimental-strip-types examples/build-finetuning-dataset.ts",
+    "eval:report": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/evalReport.ts"
   },
   "type": "module",
   "dependencies": {
@@ -15,6 +18,7 @@
     "openai": "^7.28.0"
   },
   "devDependencies": {
-    "@types/node": "^26.6.4"
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2"
   }
 }
