@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
-import { generateWithCritique } from "./utils/generateWithCritique.ts";
-import { PERSONAS } from "./utils/personas.ts";
-import { ContextWindow } from "./utils/contextWindows.ts";
-import { summarizeHistory } from "./utils/sumamarizeHistory.ts";
-import { MessageRepository } from "./utils/messageRepository.ts";
+import { generateWithCritique } from "../chat/generateWithCritique.ts";
+import { PERSONAS } from "../chat/personas.ts";
+import { ContextWindow } from "../chat/contextWindows.ts";
+import { summarizeHistory } from "../chat/summarizeHistory.ts";
+import { MessageRepository } from "../repositories/messageRepository.ts";
 
 const windowId = process.argv[2] || crypto.randomUUID();
 const contextWindow = new ContextWindow();

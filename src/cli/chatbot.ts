@@ -1,12 +1,12 @@
 import * as readLine from "node:readline/promises";
-import { streamResponse } from "./utils/streamResponse.ts";
-import { MessageRepository } from "./utils/messageRepository.ts";
+import { streamResponse } from "../chat/streamResponse.ts";
+import { MessageRepository } from "../repositories/messageRepository.ts";
 import * as crypto from "node:crypto";
-import { ContextWindow } from "./utils/contextWindows.ts";
-import { maybeCompress } from "./utils/maybeCompress.ts";
-import { stitchContext } from "./utils/stitchContext.ts";
-import { validateInput } from "./utils/validateInput.ts";
-import { validateOutput } from "./utils/validateOutput.ts";
+import { ContextWindow } from "../chat/contextWindows.ts";
+import { maybeCompress } from "../chat/maybeCompress.ts";
+import { stitchContext } from "../chat/stitchContext.ts";
+import { validateInput } from "../guardrails/validateInput.ts";
+import { validateOutput } from "../guardrails/validateOutput.ts";
 
 const systemPrompt = process.argv[2];
 const windowId = process.argv[3] || crypto.randomUUID();

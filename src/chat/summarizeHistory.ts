@@ -1,5 +1,5 @@
 import { openai } from "../clients/openai.ts";
-import type { Message } from "./types.ts";
+import type { Message } from "../shared/types.ts";
 
 
 export async function summarizeHistory(messages: Message[]): Promise<string> {

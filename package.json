@@ -2,7 +2,12 @@
   "name": "coders-university-pos-ia-m3",
   "version": "1.0.0",
   "scripts": {
-    "env:setup": "cp .env.example .env.local"
+    "env:setup": "cp .env.example .env.local",
+    "chatbot": "node --experimental-strip-types --env-file=.env.local src/cli/chatbot.ts",
+    "demo:personas": "node --experimental-strip-types --env-file=.env.local src/cli/persona-demo.ts",
+    "rag:ingest": "node --experimental-strip-types --env-file=.env.local src/cli/ingest-documents.ts",
+    "rag:query": "node --experimental-strip-types --env-file=.env.local src/cli/rag-query.ts",
+    "fine-tuning:dataset": "node --experimental-strip-types src/cli/build-finetuning-dataset.ts"
   },
   "type": "module",
   "dependencies": {
