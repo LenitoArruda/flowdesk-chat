@@ -26,6 +26,8 @@ export type ContextReport = {
 
 export type BuiltContext = {
     messages: Message[];
+    /** The knowledge chunks that made it into the prompt; `[n]` citations refer to this list. */
+    knowledge: RetrievedChunk[];
     report: ContextReport;
 };
 
@@ -80,10 +82,10 @@ export class ContextBuilder {
 
         const built = render();
         built.report.dropped = dropped;
-        return built;
+        return { ...built, knowledge };
     }
 
-    private render(input: ContextInput): BuiltContext {
+    private render(input: ContextInput): Omit<BuiltContext, "knowledge"> {
         const sections: { id: string; text: string }[] = [
             { id: "system", text: input.system },
             { id: "rules", text: `[REGRAS]\n${input.rules}` },

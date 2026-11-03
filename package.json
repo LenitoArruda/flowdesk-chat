@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "env:setup": "cp .env.example .env.local",
+    "chat": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/chat.ts",
+    "ingest": "node --experimental-strip-types --no-warnings --env-file=.env.local src/cli/ingest.ts",
     "test": "node --experimental-strip-types --no-warnings --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "fine-tuning:dataset": "node --experimental-strip-types examples/build-finetuning-dataset.ts"
