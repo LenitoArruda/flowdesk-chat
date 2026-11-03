@@ -59,3 +59,7 @@ Os testes de eval levaram a dois ajustes de prompt do classificador: perguntas s
 - Mudou prompt ou threshold (`config/settings.ts`): rode `npm run eval`.
 - Mudou regra, memória ou contexto: `npm test`.
 - Adicionou artigo à base: `npm run ingest` e inclua 1–2 casos `in_scope` em `evals/cases.json`.
+
+## Rodadas de avaliação (`npm run eval:report`)
+
+`evals/report-cases.json` tem 24 perguntas (respondíveis, fora da base, ambíguas, follow-ups com memória e inesperadas). O script grava, por turno, trechos recuperados com score, regras que decidiram, resposta, latência e chamadas ao modelo em `evals/results/`. `report-run-1.json` é a linha de base e `report-run-2.json` vem depois das correções do classificador. A relevância da recuperação é medida pela posição da fonte esperada; fidelidade e coerência foram avaliadas lendo as respostas.

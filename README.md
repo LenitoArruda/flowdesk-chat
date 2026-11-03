@@ -6,7 +6,7 @@ Projeto prático do Módulo 3 da pós-graduação: contexto estruturado, memóri
 
 ## O que ele faz
 
-- **Controla o comportamento:** recusa qualquer assunto que não seja a FlowDesk, bloqueia prompt injection e dados sensíveis, e responde sempre da mesma forma a casos iguais.
+- **Controla o comportamento:** recusa qualquer assunto que não seja a FlowDesk, bloqueia prompt injection e dados sensíveis, pede detalhes quando a mensagem é vaga, apenas registra mensagens que só informam dados do usuário e responde sempre da mesma forma a casos iguais.
 - **Usa conhecimento real:** RAG sobre 12 artigos de suporte; cada resposta cita as fontes `[n]`. Sem documentação relevante, o modelo nem é chamado.
 - **Reduz alucinação:** a resposta só é entregue se citar fontes existentes e se todo número (preço, limite, prazo) estiver na documentação; senão vira um fallback seguro.
 - **Mantém memória:** conversa (curta), resumo automático de conversas longas e fatos duráveis do usuário entre sessões (plano, papel, ferramentas), isolados por usuário.
@@ -62,6 +62,7 @@ No Windows PowerShell, use `Copy-Item .env.example .env.local`. Edite `.env.loca
 | `npm run ingest` | indexa `data/documents/*.md` (idempotente; o chat também faz isso ao iniciar) |
 | `npm test` | testes unitários e de comportamento, offline, sem chave |
 | `npm run eval` | 26 perguntas de referência contra o modelo real, com metas por categoria |
+| `npm run eval:report` | 24 perguntas (28 turnos: base, fora da base, ambíguas, follow-ups, inesperadas) e grava as evidências em `evals/results/` |
 | `npm run typecheck` | checagem de tipos |
 
 Exemplo:
@@ -78,6 +79,10 @@ O prompt é montado por blocos, sempre na mesma ordem, dentro de um orçamento d
 
 Quando excede o orçamento, descarta primeiro as mensagens antigas e os trechos de menor score; `system`, `regras` e `pergunta` nunca saem. Ver [docs/context-structure.md](docs/context-structure.md).
 
+## Resultados da avaliação
+
+Com a API real, em 24 perguntas e duas rodadas (`npm run eval:report`; dados em `evals/results/`): **16 corretas na rodada 1 e 20 na rodada 2**, após três correções (glossário no classificador, rótulos `ambiguous` e `statement`). Nenhuma resposta inventou fatos; as falhas restantes são recusas indevidas (pergunta em inglês e com erros de digitação). A suíte `npm run eval` passa 26 de 26 e `npm test`, 57 de 57. As notas de fidelidade foram atribuídas por um único avaliador.
+
 ## Documentação
 
 | Documento | Conteúdo |
@@ -86,7 +91,7 @@ Quando excede o orçamento, descarta primeiro as mensagens antigas e os trechos 
 | [docs/context-structure.md](docs/context-structure.md) | blocos de contexto, orçamento, exemplo real |
 | [docs/rules.md](docs/rules.md) | camadas de regras e como adicionar uma |
 | [docs/use-cases.md](docs/use-cases.md) | seis casos de uso reais com a cobertura de cada um |
-| [docs/testing.md](docs/testing.md) | estratégia de testes, critérios de aceite e eval |
+| [docs/testing.md](docs/testing.md) | estratégia de testes, critérios de aceite, eval e rodadas de avaliação |
 
 ## Critérios de aceitação
 

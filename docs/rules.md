@@ -32,6 +32,8 @@ Classificador de temperatura 0 com saída JSON. Recebe as últimas mensagens par
 | `out_of_scope` | recusa `out_of_scope` (sem armazenar a mensagem) |
 | `injection` | recusa `prompt_injection` |
 | `smalltalk` | saudação/agradecimento: resposta fixa, **sem chamar o modelo** |
+| `ambiguous` | mensagem sem referente ("como configuro isso?"): pede mais detalhes, sem buscar nem gerar |
+| `statement` | o usuário só informa algo sobre si ("somos 8 pessoas no plano Standard"): registra os fatos e agradece |
 
 **Falha fechada:** JSON inválido ou rótulo desconhecido vira `out_of_scope`. Perguntas sobre recursos que a plataforma pode não ter ("tem app para Apple Watch?") e sobre o suporte da FlowDesk são `in_scope`; é a etapa seguinte que responde "não encontrei".
 
