@@ -9,3 +9,4 @@ export const FINE_TUNING_DIR = resolve(DATA_DIR, "fine-tuning");
 
 export const MESSAGES_DB_PATH = resolve(DB_DIR, "messages.db");
 export const VECTORS_DB_PATH = resolve(DB_DIR, "vectors.db");
+export const MEMORY_DB_PATH = resolve(DB_DIR, "memory.db");
